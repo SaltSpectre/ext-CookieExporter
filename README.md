@@ -21,12 +21,6 @@ This extension:
 
 ### Option 1: Load Unpacked Extension (Development)
 
-1. **Generate Icons First:**
-   - Open `generate-icons.html` in your browser
-   - Click "Download All Icons" button
-   - Save each icon (icon16.png, icon32.png, icon48.png, icon128.png) to the `icons` folder
-
-2. **Load the Extension:**
    - Open Microsoft Edge
    - Navigate to `edge://extensions/`
    - Enable "Developer mode" (toggle in the bottom-left corner)
