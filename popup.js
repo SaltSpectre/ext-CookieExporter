@@ -80,6 +80,27 @@ async function exportCookies() {
   const exportBtn = document.getElementById('exportBtn');
   const statusDiv = document.getElementById('status');
   
+  // If button says "Close", just close the popup
+  if (exportBtn.textContent === 'Close') {
+    window.close();
+    return;
+  }
+  
+  // Security warning
+  const userConfirmed = confirm(
+    '⚠️ SECURITY WARNING\n\n' +
+    'Exported cookies contain sensitive authentication data that can be used to access your accounts.\n\n' +
+    '• Cookie data is stored UNENCRYPTED in plain text\n' +
+    '• Store the exported file securely\n' +
+    '• Do not share it with untrusted parties\n' +
+    '• Delete the file when no longer needed\n\n' +
+    'Do you want to continue?'
+  );
+  
+  if (!userConfirmed) {
+    return;
+  }
+  
   try {
     exportBtn.disabled = true;
     statusDiv.className = 'status';
@@ -119,7 +140,6 @@ async function exportCookies() {
     // Change button to close button
     exportBtn.textContent = 'Close';
     exportBtn.disabled = false;
-    exportBtn.onclick = () => window.close();
     
   } catch (error) {
     console.error('Export error:', error);
