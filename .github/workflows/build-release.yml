@@ -1,0 +1,87 @@
+
+name: Package and Release
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-zip:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+      tag: ${{ steps.version.outputs.TAG }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Generate version
+      id: version
+      run: |
+        date=$(date '+%y.%-m.%-d')
+        runNumber=${GITHUB_RUN_NUMBER:-0}
+        version="$date+$runNumber"
+        echo "VERSION=$version" >> $GITHUB_OUTPUT
+        echo "TAG=v$version" >> $GITHUB_OUTPUT
+        echo "Generated version: $version"
+
+    - name: Inject version & copyright
+      run: |
+        sed -i "s/{{version}}/${{ steps.version.outputs.VERSION }}/g" popup.html
+        sed -i "s/{{copyright}}/$(date +'%Y')/g" popup.html
+        
+    - name: Package archive
+      run: zip -r "CookieExporter-${{ steps.version.outputs.VERSION }}.zip" . -x ".git/*" ".github/*"
+
+    - name: Upload ZIP artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: extension-zip
+        path: CookieExporter-${{ steps.version.outputs.VERSION }}.zip
+        retention-days: 1
+
+  create-release:
+    needs: build-zip
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Create GitHub release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ needs.build-zip.outputs.tag }}
+        name: "Cookie Exporter ${{ needs.build-zip.outputs.version }}"
+        body: |
+          🍪 **Cookie Exporter ${{ needs.build-zip.outputs.version }}**
+          
+          Edge extension to export cookies to a Netscape-format cookie file.
+          
+          Automated release built from commit ${{ github.sha }}
+          
+          **Downloads:**
+          - `CookieExporter-${{ needs.build-zip.outputs.version }}.zip` - **ZIP Archive**
+          
+          **Installation:**
+            1. Download the ZIP file.
+            2. Extract the contents to a folder.
+            3. In Edge, go to `edge://extensions/`.
+            4. Enable "Developer mode".
+            5. Click "Load unpacked" and select the extracted folder.
+
+        files: artifacts/**/*
+        prerelease: false
+        draft: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
